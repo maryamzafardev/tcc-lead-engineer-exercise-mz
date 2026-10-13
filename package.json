@@ -1,0 +1,11 @@
+{
+	"name": "glow-daily-challenge",
+	"private": true,
+	"description": "Lead WordPress Engineer Challenge",
+	"engines": {
+		"node": ">=24.18.0"
+	},
+	"devDependencies": {
+		"@wordpress/env": "11.17.0"
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/wp-env.json",
+	"core": null,
+	"phpVersion": "8.4",
+	"testsEnvironment": false,
+	"plugins": [ "./plugin/glow-migration" ],
+	"mappings": {
+		"wp-content/glow-fixtures": "./fixtures"
+	},
+	"config": {
+		"WP_DEBUG": true,
+		"WP_DEBUG_LOG": true
+	}
+}
