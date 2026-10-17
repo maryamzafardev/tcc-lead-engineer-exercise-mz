@@ -26,14 +26,15 @@ description: "Task list for the Glow Daily Article Importer"
 
 **Purpose**: Plugin skeleton and loading.
 
-- [ ] T001 Create the directories `plugin/glow-migration/includes/`, `plugin/glow-migration/tests/` and `plugin/glow-migration/tests/snapshots/`.
-- [ ] T002 Update `plugin/glow-migration/glow-migration.php`:
+- [X] T001 Create the directories `plugin/glow-migration/includes/`, `plugin/glow-migration/tests/` and `plugin/glow-migration/tests/snapshots/`.
+- [X] T002 Update `plugin/glow-migration/glow-migration.php`:
   - Keep the existing plugin header and the `defined( 'ABSPATH' ) || exit;` line.
   - Define `GLOW_MIGRATION_DIR` (`__DIR__`) and `GlowMigration\CONVERTER_VERSION` (`'1'`).
   - `require_once` these six files from `includes/`: `class-block-markup.php`, `class-import-report.php`, `class-rte-converter.php`, `class-grid-converter.php`, `class-importer.php`, `class-import-command.php`.
   - Inside `if ( defined( 'WP_CLI' ) && WP_CLI )`, call `\WP_CLI::add_command( 'glow', GlowMigration\Import_Command::class )`.
   - Create each of the six files with an empty class stub (`Block_Markup`, `Import_Report`, `Rte_Converter`, `Grid_Converter`, `Importer`, `Import_Command`) so the plugin loads without fatal errors.
-- [ ] T003 Run `npx wp-env start` and then `npx wp-env run cli wp plugin list`. Confirm `glow-migration` is active and there's no PHP error. Then record the baseline counts for SC-010 from quickstart.md "Prerequisites": users, categories, tags, attachments.
+- [X] T003 Run `npx wp-env start` and then `npx wp-env run cli wp plugin list`. Confirm `glow-migration` is active and there's no PHP error. Then record the baseline counts for SC-010 from quickstart.md "Prerequisites": users, categories, tags, attachments.
+  - **Baseline recorded on 2026-10-14**: users=1, categories=1 (Uncategorized), tags=0, attachments=0. Posts: 1 ("Hello world!", ID 1), plus 1 auto-draft. Environment: WordPress 7.1.3, PHP 8.4.26, site timezone `+00:00`.
 
 ---
 
@@ -43,7 +44,7 @@ description: "Task list for the Glow Daily Article Importer"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 [P] Implement `GlowMigration\Block_Markup` in `plugin/glow-migration/includes/class-block-markup.php` as static methods that return a string for each block. Each must produce exactly the markup in `specs/001-glow-article-importer/contracts/block-markup.md`.
+- [X] T004 [P] Implement `GlowMigration\Block_Markup` in `plugin/glow-migration/includes/class-block-markup.php` as static methods that return a string for each block. Each must produce exactly the markup in `specs/001-glow-article-importer/contracts/block-markup.md`.
   - Use `get_comment_delimited_block_content( $name, $attrs, "\n" . $html . "\n" )` for the delimiters.
   - Methods:
     - `paragraph( string $inner_html )` → `<p>…</p>`.
@@ -67,13 +68,13 @@ description: "Task list for the Glow Daily Article Importer"
     - `column( string $inner_blocks, string $width )` → attribute `{"width":"33.33%"}` and `<div class="wp-block-column" style="flex-basis:33.33%">`.
     - `html( string $raw )`.
     - `join( array $blocks )` → filters out empty strings and joins with `"\n\n"`.
-- [ ] T005 [P] Implement `GlowMigration\Import_Report` in `plugin/glow-migration/includes/class-import-report.php`:
+- [X] T005 [P] Implement `GlowMigration\Import_Report` in `plugin/glow-migration/includes/class-import-report.php`:
   - Counters `created`, `updated`, `unchanged`, `failed`. These are the only outcomes (data-model.md §5); don't add "skipped".
   - `record( int $line, ?int $legacy_id, ?int $post_id, string $outcome, string $title )`.
   - `warn( int $line, ?int $legacy_id, string $code, string $message )`. `code` must be one of `unrecognised_control`, `empty_body`, `unusual_row_layout`, `media_missing_image`, `quote_missing_text`, `html_fallback`, `duplicate_match`.
   - `add_unrecognised( string $alias, int $legacy_id )`, which keeps a map of alias → `{ count, legacy_ids[] }` (data-model.md §6).
   - Getters for `counts()`, `rows()`, `warnings()` and `unrecognised()`, plus `has_failures()`.
-- [ ] T006 [P] Create the framework-free runner `plugin/glow-migration/tests/run.php`, executed with `wp eval-file`:
+- [X] T006 [P] Create the framework-free runner `plugin/glow-migration/tests/run.php`, executed with `wp eval-file`:
   - Small helpers `assert_same( $expected, $actual, $label )` and `assert_true( $cond, $label )` that collect passes and failures.
   - A `snapshot( $name, $actual )` helper that compares against `tests/snapshots/{$name}.html`. If `getenv( 'GLOW_UPDATE_SNAPSHOTS' ) === '1'`, it writes the file instead.
   - A `roundtrip( $html, $label )` helper asserting `serialize_blocks( parse_blocks( $html ) ) === $html`.
@@ -83,7 +84,7 @@ description: "Task list for the Glow Daily Article Importer"
     - a pullquote, with and without a citation;
     - an image, with and without a caption (assert it doesn't contain `wp-image-`);
     - a 4 + 8 columns block.
-- [ ] T007 Run `npx wp-env run cli wp eval-file wp-content/plugins/glow-migration/tests/run.php` and fix `plugin/glow-migration/includes/class-block-markup.php` until every Phase 2 assertion passes.
+- [X] T007 Run `npx wp-env run cli wp eval-file wp-content/plugins/glow-migration/tests/run.php` and fix `plugin/glow-migration/includes/class-block-markup.php` until every Phase 2 assertion passes.
 
 **Checkpoint**: Block helpers are verified, and stories can now build on them.
 
@@ -100,7 +101,7 @@ description: "Task list for the Glow Daily Article Importer"
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Implement `GlowMigration\Rte_Converter::convert( string $html ): array` in `plugin/glow-migration/includes/class-rte-converter.php`, following research R2. It returns `[ 'content' => string, 'notices' => array ]`.
+- [X] T008 [P] [US1] Implement `GlowMigration\Rte_Converter::convert( string $html ): array` in `plugin/glow-migration/includes/class-rte-converter.php`, following research R2. It returns `[ 'content' => string, 'notices' => array ]`.
   - **Loading:** `DOMDocument::loadHTML( '<?xml encoding="utf-8"?><div id="glow-root">' . $html . '</div>', LIBXML_NOERROR | LIBXML_HTML_NODEFDTD | LIBXML_HTML_NOIMPLIED )`. Walk the children of `#glow-root`.
   - **Top-level elements:**
     - `p` → `Block_Markup::paragraph`. Skip the paragraph when `trim( str_replace( "\u{00A0}", ' ', $text ) ) === ''` (FR-015).
@@ -115,7 +116,7 @@ description: "Task list for the Glow Daily Article Importer"
     - `a` keeps only `href`, `target` and `rel`, each escaped with `esc_attr`. Keep `href` values like `{localLink:10299}` unchanged, and **don't** pass them through `esc_url`.
     - Any other element (including `span`) is unwrapped, keeping its children.
   - Return `content` as `Block_Markup::join( $blocks )`.
-- [ ] T009 [P] [US1] Add `Rte_Converter` cases to `plugin/glow-migration/tests/run.php`:
+- [X] T009 [P] [US1] Add `Rte_Converter` cases to `plugin/glow-migration/tests/run.php`:
   - `<p>&nbsp;</p>` → content `''`.
   - `<p>a <span style="color:#ff0000">b</span></p>` → one paragraph `a b`, with no `span`.
   - `<h2>x</h2><p>y</p>` → a heading followed by a paragraph.
@@ -123,7 +124,7 @@ description: "Task list for the Glow Daily Article Importer"
   - A link with `href="{localLink:10299}"` → the href is kept unchanged.
   - `Fresh &amp; citrusy` → stays `Fresh &amp; citrusy`, with no double encoding.
   - Run `roundtrip()` on every output.
-- [ ] T010 [US1] Implement `GlowMigration\Grid_Converter::convert( string $article_body_json ): array` in `plugin/glow-migration/includes/class-grid-converter.php`. It returns `[ 'content' => string, 'notices' => array of [ code, message ], 'dropped' => string[] ]`.
+- [X] T010 [US1] Implement `GlowMigration\Grid_Converter::convert( string $article_body_json ): array` in `plugin/glow-migration/includes/class-grid-converter.php`. It returns `[ 'content' => string, 'notices' => array of [ code, message ], 'dropped' => string[] ]`.
   - **Decoding:**
     - Use `json_decode( $json, true, 512, JSON_THROW_ON_ERROR )`. Let a `JsonException` propagate.
     - An empty string, or no `sections` → content `''` plus an `empty_body` notice.
@@ -137,14 +138,14 @@ description: "Task list for the Glow Daily Article Importer"
     - `quote` → `pullquote( value.text, value.citation ?? '' )`. Empty text → skip it, with a `quote_missing_text` notice.
     - `media` → `image( 'https://www.glowdaily.example' . value.image, value.altText ?? '', value.caption ?? '' )`. Empty `image` → skip it, with a `media_missing_image` notice. Never read `value.id` (FR-026).
     - Default → skip the control. US4 adds reporting in T024.
-- [ ] T011 [US1] Add `Grid_Converter` snapshot tests to `plugin/glow-migration/tests/run.php`:
+- [X] T011 [US1] Add `Grid_Converter` snapshot tests to `plugin/glow-migration/tests/run.php`:
   - Read `ABSPATH . 'wp-content/glow-fixtures/articles.ndjson'` and `articles-v2.ndjson`.
   - For each record, call `snapshot( "article-{$id}" . ( $is_v2 ? '-v2' : '' ), $content )` and `roundtrip( $content )`.
   - Assert that 10232's content contains `"width":"33.33%"` and `"width":"66.67%"`.
   - Assert that 10233's contains `"width":"50%"` twice.
   - Assert that no content contains `wp-image-` (FR-026).
   - Generate the snapshots once with `GLOW_UPDATE_SNAPSHOTS=1`. Then **review each file `plugin/glow-migration/tests/snapshots/article-*.html` by hand against contracts/block-markup.md** before you commit it.
-- [ ] T012 [US1] Implement the US1 version of `GlowMigration\Importer` in `plugin/glow-migration/includes/class-importer.php`. This version only creates posts.
+- [X] T012 [US1] Implement the US1 version of `GlowMigration\Importer` in `plugin/glow-migration/includes/class-importer.php`. This version only creates posts.
   - Constructor: `( Grid_Converter $converter, Import_Report $report, bool $dry_run )`.
   - `import_line( string $line, int $line_no ): void`:
     - Decode the line with `json_decode` and `JSON_THROW_ON_ERROR`.
@@ -164,7 +165,7 @@ description: "Task list for the Glow Daily Article Importer"
     - Save meta (FR-007): `_glow_legacy_id` (int), `_glow_legacy_path` (`path`), `_glow_legacy_update_date` (`updateDate`, as given).
     - Record `created`.
   - Wrap the whole body in `try { } catch ( \Throwable $e )` and record `failed` with `$e->getMessage()` (FR-002).
-- [ ] T013 [US1] Implement `GlowMigration\Import_Command` in `plugin/glow-migration/includes/class-import-command.php`, following contracts/cli-import.md:
+- [X] T013 [US1] Implement `GlowMigration\Import_Command` in `plugin/glow-migration/includes/class-import-command.php`, following contracts/cli-import.md:
   - **Command:** `public function import( $args, $assoc_args )`, with a docblock synopsis for `<file>` and `[--dry-run]`.
   - **Start-up:**
     - If the file isn't readable → `\WP_CLI::error()` before doing anything else.
@@ -176,11 +177,12 @@ description: "Task list for the Glow Daily Article Importer"
   - **End:**
     - Print the summary with `\WP_CLI\Utils\format_items( 'table', $rows, [ 'outcome', 'count' ] )`, with one row each for created, updated, unchanged and failed.
     - Then `\WP_CLI::success( … )`. If `$report->has_failures()`, call `\WP_CLI::halt( 1 )` after the summary instead.
-- [ ] T014 [US1] Run `npx wp-env run cli wp glow import wp-content/glow-fixtures/articles.ndjson --user=admin`:
+- [X] T014 [US1] Run `npx wp-env run cli wp glow import wp-content/glow-fixtures/articles.ndjson --user=admin`:
   - Confirm 5 created.
   - Run the slug and meta checks in quickstart.md §2 for 10231.
   - Run the console check in quickstart.md §4 on all 5 posts.
   - Fix any invalid block in `plugin/glow-migration/includes/class-block-markup.php` or `class-rte-converter.php`, and regenerate the snapshots.
+  - **Verified 2026-10-14**: posts 6–10 created, and the content of each matches its snapshot byte for byte. The user opened all five in the editor: no invalid-block warnings. Images point at the legacy URL, which doesn't resolve (`.example` is a reserved domain), so they show as broken. That's expected (FR-011, FR-026).
 
 **Checkpoint**: The MVP works. Posts are created with valid native blocks, slugs and legacy references, but reruns still duplicate them and dates are still the import time.
 

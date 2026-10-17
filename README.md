@@ -75,5 +75,3 @@ Review it as you would on a real project. Either open a pull request on your own
 ## Help
 
 If anything in this brief is unclear, email Zac. Asking questions won't count against you.
-.
-
