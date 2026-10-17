@@ -348,7 +348,16 @@ description: "Task list for the Glow Daily Article Importer"
   - **Done 2026-10-14**: the original brief is now in `BRIEF.md`. The README has all 7 sections, plus a "How it works" section. The AI section has a TODO asking Maryam to personalise it.
 - [X] T031 [P] Add PHPDoc to every public method in `plugin/glow-migration/includes/*.php`, and make sure no debug output is left in the code.
   - **Verified 2026-10-14**: 0 functions without a doc comment, and no debug output or TODOs in `includes/` or the bootstrap file.
-- [ ] T032 Run the full quickstart.md (§1–§7) on a fresh environment: `npx wp-env clean all && npx wp-env start`. Confirm every expected result, including the editor `isValid` check on all 6 posts after the v2 import and the README check in §7.
+- [X] T032 Run the full quickstart.md (§1–§7) on a fresh environment: `npx wp-env clean all && npx wp-env start`. Confirm every expected result, including the editor `isValid` check on all 6 posts after the v2 import and the README check in §7.
+  - **Run on 2026-10-14 after `npx wp-env clean all`** (fresh site: 1 user, 1 category, 0 tags, 0 media, 1 post; timezone UTC):
+    - §1: 127 tests passed.
+    - §2: first import gave 5 created. Each got its original UTC date and the right publish/draft status on the first run (10234 is a draft). 10231 has slug `spring-skincare-reset` and legacy ID, path and `updateDate` meta.
+    - §3: rerun gave 5 unchanged. The v2 dry run reported 1/1/4 and wrote nothing (6 posts, old 10232 title). v2 gave 1 created (post 10) and 1 updated (post 5, same ID). The v2 rerun gave 6 unchanged. Final total: 7 posts.
+    - Every imported post's content matches its v2 snapshot. `_glow_dropped_controls` is set on 10232 and 10233 only.
+    - §5, logged out: published posts return 200 at date-based permalinks, and 10234 returns 404 by ID and by slug. No wirewax or Pinterest values appear. 10235's title and its empty-alt legacy image are correct. 10231 has no empty paragraphs. 10232 has its 33.33% / 66.67% columns.
+    - §6: the corrupt line gave 6 unchanged, 1 failed ("Line is not valid JSON") and exit code 1.
+    - §7: all 7 README sections are present. SC-010: counts are unchanged (1/1/0/0).
+    - Editor check: the user opened all 6 imported posts (IDs 4, 5, 6, 7, 8, 10, including 10236 from v2) and found no invalid blocks.
 
 ---
 

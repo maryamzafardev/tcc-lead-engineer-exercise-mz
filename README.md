@@ -63,11 +63,11 @@ Success: Imported 6 records (1 created, 1 updated, 4 unchanged).
 
 The command exits with code 1 if any record fails. Each failure is reported with its line number and reason, and the rest of the file still imports.
 
-
+---
 
 | Requirement from the brief | How it's met |
 | --- | --- |
-| **Native blocks** | `rte` becomes paragraph, heading and list blocks. `qote` becomes a pull quote. `media` becomes an image block pointing at the legacy URL. A multi-area row becomes columns sized from the grid (4 + 8 → 33.33% / 66.67%, 6 + 6 → 50% / 50%). The markup matches each core block's `save()` output byte for byte, so the editor reports no validation errors. Checked in the editor: no invalid-block warnings. |
+| **Native blocks** | `rte` becomes paragraph, heading and list blocks. `quote` becomes a pull quote. `media` becomes an image block pointing at the legacy URL. A multi-area row becomes columns sized from the grid (4 + 8 → 33.33% / 66.67%, 6 + 6 → 50% / 50%). The markup matches each core block's `save()` output byte for byte, so the editor reports no validation errors. Checked in the editor: no invalid-block warnings. |
 | **Unrecognised content** | Unknown controls (`wirewaxVideoId`, `pinterestWidget`) are left out, so readers never see raw IDs or URLs. They're listed in the run summary and stored on the post as `_glow_dropped_controls`. The content around them still converts. |
 | **Safe reruns** | Each post stores its legacy ID (`_glow_legacy_id`) and a fingerprint of the source data. On a rerun, the importer finds the post by legacy ID and compares fingerprints: unchanged is skipped, changed is updated in place, and new is created. Nothing is ever deleted. |
 | **Dates** | `createDate` (with its offset) sets both `post_date_gmt` (UTC) and `post_date` (site time). Legacy drafts stay drafts and keep their dates. |
@@ -133,6 +133,30 @@ The command exits with code 1 if any record fails. Each failure is reported with
 - **Make it idempotent and version it,** like the importer, so it's safe to rerun after each import.
 
 ### Redirects from legacy URLs
+
+**Why redirects are needed.** The same article has a different address on each site:
+
+| | Address |
+| --- | --- |
+| Old Glow Daily site | `https://www.glowdaily.example/skincare/spring-skincare-reset/` |
+| New WordPress site (test install) | `http://localhost:8888/2021/09/02/spring-skincare-reset/` |
+
+The end of the address (`spring-skincare-reset`) is the same, because the importer copies the old `urlName` as the slug. The part before it is different:
+
+- The old site put the **section** in the address: `/skincare/`.
+- The new WordPress site puts the **publish date** in the address: `/2021/09/02/`.
+
+WordPress builds addresses from a pattern chosen under **Settings → Permalinks**. The fresh test site happens to use the date-based pattern.
+
+Links to the old addresses are everywhere: Google results, other websites, social media posts, people's bookmarks. After launch, someone visiting `/skincare/spring-skincare-reset/` would get a "page not found" error, because that address doesn't exist on the new site. That loses readers and hurts search rankings.
+
+**The fix is redirects.** A redirect is an automatic forwarding rule: anyone who visits the old address is sent straight to the new one. Visitors don't notice, and Google moves its listing to the new address. The importer already stores each article's old address on the post (`_glow_legacy_path`), so the redirect rules can be built from that. Jordan's pull request (Part 2) attempts this.
+
+**The alternative is to make the new addresses match the old ones,** so fewer redirects are needed, by choosing a permalink pattern that includes the section, such as `/%category%/%postname%/`. That only works if the posts have the right categories (Skincare, Makeup, Fragrance). Categories are out of scope for this importer, so every post is "Uncategorized" for now, and the addresses would come out as `/uncategorized/spring-skincare-reset/`. Once categories are imported, that pattern would give `/skincare/spring-skincare-reset/`, matching the old site exactly. That's a decision to make with the client.
+
+In short: WordPress builds new URLs, so old links would break. The importer stores each article's old path, so we can redirect old URLs to the new ones, or match the old URL structure once categories are imported.
+
+**How I'd build the redirects:**
 
 - **Build the redirect lookup from the data we already store** (`_glow_legacy_path` → post) rather than a separate copy that can drift.
 - **For about 2,500 articles and heavy traffic, handle redirects as early as possible:**
