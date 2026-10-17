@@ -67,11 +67,20 @@ class Importer {
 		$legacy_id = null;
 
 		try {
-			$record    = json_decode( $line, true, 512, JSON_THROW_ON_ERROR );
+			try {
+				$record = json_decode( $line, true, 512, JSON_THROW_ON_ERROR );
+			} catch ( \JsonException $e ) {
+				throw new \UnexpectedValueException( 'Line is not valid JSON: ' . $e->getMessage(), 0, $e );
+			}
+
 			$legacy_id = $this->validate( $record );
 			$title     = (string) $record['properties']['title'];
 
-			$converted = $this->converter->convert( (string) ( $record['properties']['articleBody'] ?? '' ) );
+			try {
+				$converted = $this->converter->convert( (string) ( $record['properties']['articleBody'] ?? '' ) );
+			} catch ( \JsonException $e ) {
+				throw new \UnexpectedValueException( 'articleBody is not valid JSON: ' . $e->getMessage(), 0, $e );
+			}
 
 			foreach ( $converted['notices'] as list( $code, $message ) ) {
 				$this->report->warn( $line_no, $legacy_id, $code, $message );

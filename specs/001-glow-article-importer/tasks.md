@@ -322,11 +322,16 @@ description: "Task list for the Glow Daily Article Importer"
 
 **Purpose**: Edge cases, the scope check, documentation and the final check.
 
-- [ ] T028 Run the corrupt-line test in quickstart.md §6. Confirm `failed 1` with the line number reported, 5 unchanged, and exit code 1. If not, fix `plugin/glow-migration/includes/class-import-command.php` or `plugin/glow-migration/includes/class-importer.php`.
-- [ ] T029 Check the out-of-scope rule (FR-026, SC-010):
+- [X] T028 Run the corrupt-line test in quickstart.md §6. Confirm `failed 1` with the line number reported, 5 unchanged, and exit code 1. If not, fix `plugin/glow-migration/includes/class-import-command.php` or `plugin/glow-migration/includes/class-importer.php`.
+  - **Verified 2026-10-14**:
+    - The broken file was based on `articles-v2.ndjson`, because the site holds v2 content and the v1 file would roll 10232 back.
+    - Result: 6 unchanged, 1 failed (line 7). The summary still printed, and the exit code was 1.
+    - Failure messages now say what was wrong: "Line is not valid JSON", "articleBody is not valid JSON", or a missing title. All three were tested, and they created no posts.
+- [X] T029 Check the out-of-scope rule (FR-026, SC-010):
   - Rerun the four baseline count commands from quickstart.md "Prerequisites" and confirm they match the counts recorded in T003.
   - Run `grep -rnE "wp_insert_user|wp_insert_term|wp_set_post_terms|wp_set_post_categories|media_sideload_image|media_handle_sideload|wp_insert_attachment|\['author'\]|\['category'\]" plugin/glow-migration/` and confirm there are no matches.
-- [ ] T030 [P] Rewrite the root `README.md` (FR-027, SC-011). Keep the original brief below a `---` separator, or move it to `BRIEF.md`. Add these 7 sections:
+  - **Verified 2026-10-14**: counts are users=1, categories=1, tags=0, attachments=0, matching the T003 baseline. The code search found no out-of-scope calls.
+- [X] T030 [P] Rewrite the root `README.md` (FR-027, SC-011). Keep the original brief below a `---` separator, or move it to `BRIEF.md`. Add these 7 sections:
   1. **How to run**: the commands from quickstart.md, including `--dry-run` and the test runner.
   2. **Assumptions**: from spec.md's Assumptions, including that authors, categories and media files are out of scope.
   3. **Trade-offs and what I'd do next**:
@@ -340,7 +345,9 @@ description: "Task list for the Glow Daily Article Importer"
   5. **Redirects from legacy URLs** (approach only): look up `_glow_legacy_path` → post on `template_redirect`, or export the mapping to the Redirection plugin or server rules. Use 301s, and normalise trailing slashes and case.
   6. **Import reporting** (approach only): JSON or CSV output of the run report, stored per run (for example as a custom post type or log file), with a client-facing summary of counts, dropped content and unresolved links.
   7. **How AI tools were used**: Spec Kit (specify → plan → tasks → implement) with Claude Code, and what was reviewed or changed by hand.
-- [ ] T031 [P] Add PHPDoc to every public method in `plugin/glow-migration/includes/*.php`, and make sure no debug output is left in the code.
+  - **Done 2026-10-14**: the original brief is now in `BRIEF.md`. The README has all 7 sections, plus a "How it works" section. The AI section has a TODO asking Maryam to personalise it.
+- [X] T031 [P] Add PHPDoc to every public method in `plugin/glow-migration/includes/*.php`, and make sure no debug output is left in the code.
+  - **Verified 2026-10-14**: 0 functions without a doc comment, and no debug output or TODOs in `includes/` or the bootstrap file.
 - [ ] T032 Run the full quickstart.md (§1–§7) on a fresh environment: `npx wp-env clean all && npx wp-env start`. Confirm every expected result, including the editor `isValid` check on all 6 posts after the v2 import and the README check in §7.
 
 ---
