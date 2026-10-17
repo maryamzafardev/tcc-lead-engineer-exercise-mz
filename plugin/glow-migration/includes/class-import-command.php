@@ -43,6 +43,7 @@ class Import_Command {
 		}
 
 		$dry_run  = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$prefix   = $dry_run ? '[dry-run] ' : '';
 		$report   = new Import_Report();
 		$importer = new Importer( new Grid_Converter(), $report, $dry_run );
 
@@ -63,12 +64,12 @@ class Import_Command {
 			$importer->import_line( (string) $line, $index + 1 );
 
 			$rows = $report->rows();
-			\WP_CLI::log( $this->progress_line( end( $rows ) ) );
+			\WP_CLI::log( $prefix . $this->progress_line( end( $rows ) ) );
 
 			$warnings = $report->warnings();
 
 			for ( $i = $warnings_shown, $n = count( $warnings ); $i < $n; $i++ ) {
-				\WP_CLI::warning( sprintf( 'line %d legacy %s: %s', $warnings[ $i ]['line'], $warnings[ $i ]['legacy_id'] ?? '?', $warnings[ $i ]['message'] ) );
+				\WP_CLI::warning( $prefix . sprintf( 'line %d legacy %s: %s', $warnings[ $i ]['line'], $warnings[ $i ]['legacy_id'] ?? '?', $warnings[ $i ]['message'] ) );
 			}
 
 			$warnings_shown = count( $warnings );
@@ -79,7 +80,12 @@ class Import_Command {
 		$counts = $report->counts();
 
 		if ( $report->has_failures() ) {
-			\WP_CLI::error( sprintf( '%d record(s) failed; see the messages above.', $counts['failed'] ) );
+			\WP_CLI::error( $prefix . sprintf( '%d record(s) failed; see the messages above.', $counts['failed'] ) );
+		}
+
+		if ( $dry_run ) {
+			\WP_CLI::success( 'Dry run complete; no changes written.' );
+			return;
 		}
 
 		\WP_CLI::success(

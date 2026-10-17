@@ -201,7 +201,7 @@ description: "Task list for the Glow Daily Article Importer"
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Add `find_existing( int $legacy_id ): ?int` to `plugin/glow-migration/includes/class-importer.php`:
+- [X] T015 [US2] Add `find_existing( int $legacy_id ): ?int` to `plugin/glow-migration/includes/class-importer.php`:
   - Call `get_posts()` with these arguments:
     ```php
     [
@@ -218,20 +218,26 @@ description: "Task list for the Glow Daily Article Importer"
     ]
     ```
   - If there's more than one result → `duplicate_match` warning, and use the first.
-- [ ] T016 [US2] Add `source_hash( array $record ): string` to `plugin/glow-migration/includes/class-importer.php`:
+- [X] T016 [US2] Add `source_hash( array $record ): string` to `plugin/glow-migration/includes/class-importer.php`:
   - Return `hash( 'sha256', wp_json_encode( [ CONVERTER_VERSION, title, excerpt, urlName, published, createDate, updateDate, articleBody ] ) )` (research R3).
   - Because `updateDate` is included, *any* different `updateDate` counts as a change (FR-020).
   - Save the result as `_glow_import_hash` on every create and update.
-- [ ] T017 [US2] Change `import_line` in `plugin/glow-migration/includes/class-importer.php` to follow the state machine in data-model.md §5:
+- [X] T017 [US2] Change `import_line` in `plugin/glow-migration/includes/class-importer.php` to follow the state machine in data-model.md §5:
   - No existing post → create (FR-021).
   - Existing post where `get_post_meta( $id, '_glow_import_hash', true ) === $hash` → record `unchanged`, no write (FR-019).
   - Otherwise → `wp_update_post( wp_slash( $postarr + [ 'ID' => $id ] ), true )`, refresh all the meta, and record `updated` (FR-020).
   - Never delete or unpublish posts (FR-022).
-- [ ] T018 [US2] Add dry-run handling to `plugin/glow-migration/includes/class-importer.php` and `plugin/glow-migration/includes/class-import-command.php` (FR-004):
+- [X] T018 [US2] Add dry-run handling to `plugin/glow-migration/includes/class-importer.php` and `plugin/glow-migration/includes/class-import-command.php` (FR-004):
   - When `$dry_run` is true, compute the outcome as normal but skip `wp_insert_post`, `wp_update_post` and `update_post_meta`.
   - Prefix every output line with `[dry-run]`.
   - The final message is `Success: Dry run complete; no changes written.`
-- [ ] T019 [US2] Run quickstart.md §3 end to end, including the dry-run step (US2 scenario 5), and confirm the exact counts. Confirm the post count after each step with `npx wp-env run cli wp post list --post_type=post --post_status=any --format=count`.
+- [X] T019 [US2] Run quickstart.md §3 end to end, including the dry-run step (US2 scenario 5), and confirm the exact counts. Confirm the post count after each step with `npx wp-env run cli wp post list --post_type=post --post_status=any --format=count`.
+  - **Verified 2026-10-14**:
+    - Rerunning `articles.ndjson` gave 5 unchanged. The first rerun gave 5 updated, because posts 6–10 were created before fingerprints existed; they were matched by legacy ID and updated in place, with no duplicates.
+    - A dry run of v2 reported 1 created, 1 updated and 4 unchanged, and changed nothing: post 7's title stayed the same and the count stayed at 6.
+    - The real v2 import gave 1 created (post 17, for 10236), 1 updated (post 7, same ID) and 4 unchanged.
+    - Running v2 again gave 6 unchanged.
+    - Final count: 7 posts (6 imported plus "Hello world!"). Every imported post matches its v2 snapshot.
 
 **Checkpoint**: Reruns are safe, v2 updates work, and the dry run is verified.
 

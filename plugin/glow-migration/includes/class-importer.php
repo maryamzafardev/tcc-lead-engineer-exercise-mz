@@ -12,8 +12,9 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Turns one legacy article record into a WordPress post.
  *
- * This is the User Story 1 version: it validates, converts and creates posts.
- * Matching existing posts (US2) and dates/status (US3) come in later phases.
+ * Each record is matched to its post by legacy ID and compared by a source
+ * fingerprint, so reruns create, update or skip but never duplicate (US2).
+ * Dates and status (US3) come in a later phase.
  *
  * Authors, categories and media are never touched (FR-026): this class
  * doesn't read the legacy `author` or `category` fields, and doesn't set
@@ -76,6 +77,15 @@ class Importer {
 				$this->report->warn( $line_no, $legacy_id, $code, $message );
 			}
 
+			$hash     = $this->source_hash( $record );
+			$existing = $this->find_existing( $legacy_id, $line_no );
+
+			// Same source and same converter version as last time: nothing to do (FR-019).
+			if ( null !== $existing && get_post_meta( $existing, '_glow_import_hash', true ) === $hash ) {
+				$this->report->record( $line_no, $legacy_id, $existing, 'unchanged', $title );
+				return;
+			}
+
 			$postarr = array(
 				'post_type'    => 'post',
 				'post_title'   => $title,
@@ -86,26 +96,116 @@ class Importer {
 					'_glow_legacy_id'          => $legacy_id,
 					'_glow_legacy_path'        => (string) ( $record['path'] ?? '' ),
 					'_glow_legacy_update_date' => (string) ( $record['updateDate'] ?? '' ),
+					'_glow_import_hash'        => $hash,
 				),
 			);
 
-			$post_id = null;
+			$outcome = null === $existing ? 'created' : 'updated';
+			$post_id = $existing;
 
 			if ( ! $this->dry_run ) {
-				// wp_insert_post() unslashes its input, so slash it first; meta_input values included.
-				$result = wp_insert_post( wp_slash( $postarr ), true );
-
-				if ( is_wp_error( $result ) ) {
-					throw new \RuntimeException( $result->get_error_message() );
-				}
-
-				$post_id = (int) $result;
+				$post_id = $this->save( $postarr, $existing );
 			}
 
-			$this->report->record( $line_no, $legacy_id, $post_id, 'created', $title );
+			$this->report->record( $line_no, $legacy_id, $post_id, $outcome, $title );
 		} catch ( \Throwable $e ) {
 			$this->report->record( $line_no, $legacy_id, null, 'failed', $e->getMessage() );
 		}
+	}
+
+	/**
+	 * Creates a new post, or updates the matched one in place. Never deletes (FR-022).
+	 *
+	 * @param array    $postarr  Post data, unslashed.
+	 * @param int|null $existing Matched post ID, or null to create.
+	 * @return int Post ID.
+	 * @throws \RuntimeException When WordPress refuses the write.
+	 */
+	private function save( array $postarr, ?int $existing ): int {
+		if ( null !== $existing ) {
+			$postarr['ID'] = $existing;
+		}
+
+		// wp_insert_post()/wp_update_post() unslash their input, so slash it first; meta_input values included.
+		$result = null === $existing
+			? wp_insert_post( wp_slash( $postarr ), true )
+			: wp_update_post( wp_slash( $postarr ), true );
+
+		if ( is_wp_error( $result ) ) {
+			throw new \RuntimeException( $result->get_error_message() );
+		}
+
+		return (int) $result;
+	}
+
+	/**
+	 * Finds the post previously imported for a legacy ID (FR-018).
+	 *
+	 * Every status is searched, trash included, so a trashed article is never
+	 * imported a second time.
+	 *
+	 * @param int $legacy_id Legacy article ID.
+	 * @param int $line_no   Line number, for the duplicate warning.
+	 * @return int|null Post ID, or null if the article hasn't been imported yet.
+	 */
+	private function find_existing( int $legacy_id, int $line_no ): ?int {
+		$ids = get_posts(
+			array(
+				'post_type'        => 'post',
+				'post_status'      => array_merge( array_keys( get_post_stati() ), array( 'trash' ) ),
+				'meta_key'         => '_glow_legacy_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'       => $legacy_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'fields'           => 'ids',
+				'orderby'          => 'ID',
+				'order'            => 'ASC',
+				'posts_per_page'   => -1,
+				'no_found_rows'    => true,
+				'suppress_filters' => true,
+			)
+		);
+
+		if ( array() === $ids ) {
+			return null;
+		}
+
+		if ( count( $ids ) > 1 ) {
+			$this->report->warn(
+				$line_no,
+				$legacy_id,
+				'duplicate_match',
+				sprintf( '%d posts share this legacy ID (%s); using post %d.', count( $ids ), implode( ', ', $ids ), $ids[0] )
+			);
+		}
+
+		return (int) $ids[0];
+	}
+
+	/**
+	 * Fingerprint of everything that affects the post (research R3).
+	 *
+	 * Includes `updateDate`, so any different `updateDate` counts as a change
+	 * (FR-020), and the converter version, so improving the converter
+	 * re-converts every post on the next run.
+	 *
+	 * @param array $record Decoded record.
+	 * @return string SHA-256 hex digest.
+	 */
+	private function source_hash( array $record ): string {
+		return hash(
+			'sha256',
+			(string) wp_json_encode(
+				array(
+					CONVERTER_VERSION,
+					$record['properties']['title'] ?? null,
+					$record['properties']['excerpt'] ?? null,
+					$record['urlName'] ?? null,
+					$record['published'] ?? null,
+					$record['createDate'] ?? null,
+					$record['updateDate'] ?? null,
+					$record['properties']['articleBody'] ?? null,
+				)
+			)
+		);
 	}
 
 	/**
