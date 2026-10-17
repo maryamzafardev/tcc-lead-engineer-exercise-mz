@@ -181,7 +181,12 @@ class Grid_Converter {
 				);
 
 			default:
-				// TODO (US4, T024): record unrecognised controls. For now they're left out.
+				// Retired or undocumented features (e.g. wirewaxVideoId, pinterestWidget):
+				// leave them out so readers never see raw IDs or URLs, but keep a record (FR-016).
+				// The rest of the area still converts, because each control is independent (FR-017).
+				$label           = '' === $alias ? '(missing)' : $alias;
+				$this->dropped[] = $label;
+				$this->notices[] = array( 'unrecognised_control', sprintf( 'Left out unrecognised control "%s".', $label ) );
 				return '';
 		}
 	}

@@ -439,6 +439,38 @@ $t->assert_same( 3, substr_count( $odd['content'], '"width":"33.33%"' ), 'three-
 $t->roundtrip( $odd['content'], 'three-area row' );
 
 /*
+ * Unrecognised controls (T027).
+ */
+$t->section( 'Unrecognised controls' );
+
+$records = array();
+foreach ( file( ABSPATH . 'wp-content/glow-fixtures/articles.ndjson', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES ) as $line ) {
+	$record                         = json_decode( $line, true );
+	$records[ (int) $record['id'] ] = $grid->convert( $record['properties']['articleBody'] );
+}
+
+foreach ( array( 10232, 10233 ) as $id ) {
+	foreach ( array( 'wirewax', '8812345', 'pinterest.com' ) as $needle ) {
+		$t->assert_true( false === stripos( $records[ $id ]['content'], $needle ), "{$id} content has no \"{$needle}\" (SC-006)" );
+	}
+}
+
+$t->assert_same( array( 'wirewaxVideoId' ), $records[10232]['dropped'], '10232 dropped exactly wirewaxVideoId' );
+$t->assert_same( array( 'pinterestWidget' ), $records[10233]['dropped'], '10233 dropped exactly pinterestWidget' );
+$t->assert_same( array(), $records[10231]['dropped'], '10231 dropped nothing' );
+$t->assert_true(
+	in_array( 'unrecognised_control', array_column( $records[10232]['notices'], 0 ), true ),
+	'10232 raises an unrecognised_control notice'
+);
+
+// FR-017: the controls next to the dropped one still convert.
+$t->assert_true( false !== strpos( $records[10232]['content'], 'What an essence does' ), '10232 keeps the rte that follows wirewaxVideoId in the same area' );
+$t->assert_true( false !== strpos( $records[10233]['content'], 'SPF is the one product' ), '10233 keeps the quote before pinterestWidget in the same area' );
+
+$missing = $grid->convert( wp_json_encode( array( 'sections' => array( array( 'rows' => array( array( 'areas' => array( array( 'grid' => 12, 'controls' => array( array( 'value' => 'x' ) ) ) ) ) ) ) ) ) ) );
+$t->assert_same( array( '(missing)' ), $missing['dropped'], 'control with no alias is recorded as "(missing)"' );
+
+/*
  * Importer::dates_for (T022).
  */
 $t->section( 'Importer::dates_for' );

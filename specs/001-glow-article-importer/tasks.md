@@ -293,20 +293,26 @@ description: "Task list for the Glow Daily Article Importer"
 
 ### Implementation for User Story 4
 
-- [ ] T024 [US4] Replace the default branch from T010 in `plugin/glow-migration/includes/class-grid-converter.php`:
+- [X] T024 [US4] Replace the default branch from T010 in `plugin/glow-migration/includes/class-grid-converter.php`:
   - Add the alias, or `'(missing)'` when it's empty, to `dropped[]`.
   - Add an `unrecognised_control` notice, and output nothing.
   - The other controls in the same area must still convert (FR-017).
-- [ ] T025 [US4] In `plugin/glow-migration/includes/class-importer.php`:
+- [X] T025 [US4] In `plugin/glow-migration/includes/class-importer.php`:
   - For each dropped alias, call `$report->add_unrecognised( $alias, $legacy_id )` (FR-016).
   - Save `_glow_dropped_controls` (an array of unique aliases) on create and update. Delete the meta when the array is empty.
-- [ ] T026 [US4] In `plugin/glow-migration/includes/class-import-command.php`, after the summary table, print the "Unrecognised controls (left out of content):" section in the format shown in contracts/cli-import.md, only when the tally isn't empty (SC-007).
-- [ ] T027 [US4] Add asserts to `plugin/glow-migration/tests/run.php`:
+- [X] T026 [US4] In `plugin/glow-migration/includes/class-import-command.php`, after the summary table, print the "Unrecognised controls (left out of content):" section in the format shown in contracts/cli-import.md, only when the tally isn't empty (SC-007).
+- [X] T027 [US4] Add asserts to `plugin/glow-migration/tests/run.php`:
   - The converted content of 10232 and 10233 contains none of `wirewax`, `8812345` or `pinterest.com` (SC-006).
   - `dropped` equals `['wirewaxVideoId']` for 10232 and `['pinterestWidget']` for 10233.
   - The other controls in the same areas are present: 10232's essence `rte` and 10233's `quote`.
 
   Then bump `CONVERTER_VERSION` to `'3'` in `plugin/glow-migration/glow-migration.php`, regenerate the snapshots, and rerun the import.
+  - **Verified 2026-10-14**:
+    - Bumped `CONVERTER_VERSION` to `'3'`. The snapshots were unchanged, because these controls were already left out.
+    - Importing v2 gave 6 updated, with warnings for 10232 and 10233. The summary listed `wirewaxVideoId x1 legacy IDs: 10232` and `pinterestWidget x1 legacy IDs: 10233`.
+    - Rerunning gave 6 unchanged, and the summary still listed both controls.
+    - `_glow_dropped_controls` is set on posts 7 and 8 only.
+    - Searching all posts for `pinterest`, `wirewax` and `8812345` finds 0 matches, and none of them appears on the front end of posts 7 and 8.
 
 **Checkpoint**: All four stories work.
 

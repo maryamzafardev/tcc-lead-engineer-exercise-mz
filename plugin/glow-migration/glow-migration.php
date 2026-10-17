@@ -18,7 +18,7 @@ const GLOW_MIGRATION_DIR = __DIR__;
  * Version of the grid-to-block conversion. It's part of each post's import
  * hash, so bumping it makes the next run re-convert every post.
  */
-const CONVERTER_VERSION = '2';
+const CONVERTER_VERSION = '3';
 
 require_once GLOW_MIGRATION_DIR . '/includes/class-block-markup.php';
 require_once GLOW_MIGRATION_DIR . '/includes/class-import-report.php';

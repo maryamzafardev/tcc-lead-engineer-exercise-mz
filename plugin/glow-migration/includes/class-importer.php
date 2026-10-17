@@ -77,6 +77,14 @@ class Importer {
 				$this->report->warn( $line_no, $legacy_id, $code, $message );
 			}
 
+			// Tallied on every run, unchanged records included, so the summary always
+			// lists every unrecognised control in the file (SC-007).
+			foreach ( $converted['dropped'] as $alias ) {
+				$this->report->add_unrecognised( $alias, $legacy_id );
+			}
+
+			$dropped = array_values( array_unique( $converted['dropped'] ) );
+
 			$hash     = $this->source_hash( $record );
 			$existing = $this->find_existing( $legacy_id, $line_no );
 
@@ -102,6 +110,11 @@ class Importer {
 				),
 			);
 
+			// Lets a later report find posts with left-out content without re-reading the export (research R5).
+			if ( array() !== $dropped ) {
+				$postarr['meta_input']['_glow_dropped_controls'] = $dropped;
+			}
+
 			// Original publish date, in site time and UTC (FR-023).
 			$postarr += self::dates_for( (string) $record['createDate'] );
 
@@ -110,6 +123,11 @@ class Importer {
 
 			if ( ! $this->dry_run ) {
 				$post_id = $this->save( $postarr, $existing );
+
+				// The article no longer has unrecognised controls: clear the old record.
+				if ( array() === $dropped ) {
+					delete_post_meta( $post_id, '_glow_dropped_controls' );
+				}
 			}
 
 			$this->report->record( $line_no, $legacy_id, $post_id, $outcome, $title );

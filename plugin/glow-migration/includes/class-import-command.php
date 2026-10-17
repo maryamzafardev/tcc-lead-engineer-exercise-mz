@@ -120,7 +120,7 @@ class Import_Command {
 	}
 
 	/**
-	 * Prints the outcome table.
+	 * Prints the outcome table and the unrecognised-control tally.
 	 *
 	 * @param Import_Report $report Run report.
 	 */
@@ -135,5 +135,27 @@ class Import_Command {
 		}
 
 		\WP_CLI\Utils\format_items( 'table', $rows, array( 'outcome', 'count' ) );
+
+		$unrecognised = $report->unrecognised();
+
+		if ( array() === $unrecognised ) {
+			return;
+		}
+
+		// SC-007: every unrecognised control type in the run is listed here.
+		\WP_CLI::log( 'Unrecognised controls (left out of content):' );
+
+		$width = max( array_map( 'strlen', array_keys( $unrecognised ) ) );
+
+		foreach ( $unrecognised as $alias => $tally ) {
+			\WP_CLI::log(
+				sprintf(
+					'  %s  x%d  legacy IDs: %s',
+					str_pad( $alias, $width ),
+					$tally['count'],
+					implode( ', ', $tally['legacy_ids'] )
+				)
+			);
+		}
 	}
 }
