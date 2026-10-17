@@ -18,20 +18,24 @@ npx wp-env start
 
 The site runs at http://localhost:8888 (`admin` / `password`).
 
+**Preview a run without changing anything:**
+
+```bash
+npx wp-env run cli wp glow import wp-content/glow-fixtures/articles.ndjson --dry-run
+
+npx wp-env run cli wp glow import wp-content/glow-fixtures/articles-v2.ndjson --dry-run
+```
+
+
 **Import the first export, then the later one:**
 
 ```bash
 npx wp-env run cli wp glow import wp-content/glow-fixtures/articles.ndjson --user=admin
+
 npx wp-env run cli wp glow import wp-content/glow-fixtures/articles-v2.ndjson --user=admin
 ```
 
 `--user=admin` attributes the posts and their revisions to a real user.
-
-**Preview a run without changing anything:**
-
-```bash
-npx wp-env run cli wp glow import wp-content/glow-fixtures/articles-v2.ndjson --dry-run
-```
 
 **Run the tests** (127 assertions: block markup, converters, fixture snapshots, dates):
 
