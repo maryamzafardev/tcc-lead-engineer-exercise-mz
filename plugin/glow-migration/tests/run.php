@@ -16,6 +16,7 @@ namespace GlowMigration\Tests;
 use GlowMigration\Block_Markup;
 use GlowMigration\Grid_Converter;
 use GlowMigration\Import_Report;
+use GlowMigration\Importer;
 use GlowMigration\Rte_Converter;
 
 defined( 'ABSPATH' ) || exit;
@@ -436,5 +437,48 @@ $t->assert_true( in_array( 'quote_missing_text', $codes, true ), 'empty quote ra
 $t->assert_true( in_array( 'media_missing_image', $codes, true ), 'image without path raises media_missing_image' );
 $t->assert_same( 3, substr_count( $odd['content'], '"width":"33.33%"' ), 'three-area row becomes three 33.33% columns' );
 $t->roundtrip( $odd['content'], 'three-area row' );
+
+/*
+ * Importer::dates_for (T022).
+ */
+$t->section( 'Importer::dates_for' );
+
+$t->assert_same(
+	'2021-09-02 22:15:00',
+	Importer::dates_for( '2021-09-03T08:15:00+10:00' )['post_date_gmt'],
+	'10231 createDate +10:00 → GMT 2021-09-02 22:15:00'
+);
+$t->assert_same(
+	'2022-03-13 23:00:00',
+	Importer::dates_for( '2022-03-14T10:00:00+11:00' )['post_date_gmt'],
+	'10232 createDate +11:00 (daylight saving) → GMT 2022-03-13 23:00:00'
+);
+
+// The wp-env site runs in UTC, which would hide site-time bugs, so check a non-UTC site too.
+$sydney = static fn() => 'Australia/Sydney';
+add_filter( 'pre_option_timezone_string', $sydney );
+
+$t->assert_same(
+	array(
+		'post_date'     => '2021-09-03 08:15:00',
+		'post_date_gmt' => '2021-09-02 22:15:00',
+	),
+	Importer::dates_for( '2021-09-03T08:15:00+10:00' ),
+	'Sydney site (AEST): site time equals the legacy wall-clock time'
+);
+$t->assert_same(
+	'2022-03-14 10:00:00',
+	Importer::dates_for( '2022-03-14T10:00:00+11:00' )['post_date'],
+	'Sydney site (AEDT): daylight-saving date keeps its wall-clock time'
+);
+
+remove_filter( 'pre_option_timezone_string', $sydney );
+
+try {
+	Importer::dates_for( 'not a date' );
+	$t->assert_true( false, 'unparseable date throws' );
+} catch ( \Exception $e ) {
+	$t->assert_true( true, 'unparseable date throws' );
+}
 
 $t->finish();

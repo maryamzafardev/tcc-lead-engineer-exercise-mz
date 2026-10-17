@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * Each record is matched to its post by legacy ID and compared by a source
  * fingerprint, so reruns create, update or skip but never duplicate (US2).
- * Dates and status (US3) come in a later phase.
+ * Posts keep the legacy publish date and published/draft status (US3).
  *
  * Authors, categories and media are never touched (FR-026): this class
  * doesn't read the legacy `author` or `category` fields, and doesn't set
@@ -92,6 +92,8 @@ class Importer {
 				'post_excerpt' => wp_strip_all_tags( (string) ( $record['properties']['excerpt'] ?? '' ) ),
 				'post_name'    => $this->slug( $record ),
 				'post_content' => $converted['content'],
+				// A missing `published` counts as false, so nothing goes public by accident (FR-025).
+				'post_status'  => true === ( $record['published'] ?? false ) ? 'publish' : 'draft',
 				'meta_input'   => array(
 					'_glow_legacy_id'          => $legacy_id,
 					'_glow_legacy_path'        => (string) ( $record['path'] ?? '' ),
@@ -99,6 +101,9 @@ class Importer {
 					'_glow_import_hash'        => $hash,
 				),
 			);
+
+			// Original publish date, in site time and UTC (FR-023).
+			$postarr += self::dates_for( (string) $record['createDate'] );
 
 			$outcome = null === $existing ? 'created' : 'updated';
 			$post_id = $existing;
@@ -124,6 +129,10 @@ class Importer {
 	private function save( array $postarr, ?int $existing ): int {
 		if ( null !== $existing ) {
 			$postarr['ID'] = $existing;
+
+			// Without this, wp_update_post() resets the date of a draft that has
+			// no GMT date yet, so legacy drafts would lose their date (FR-024).
+			$postarr['edit_date'] = true;
 		}
 
 		// wp_insert_post()/wp_update_post() unslash their input, so slash it first; meta_input values included.
@@ -178,6 +187,25 @@ class Importer {
 		}
 
 		return (int) $ids[0];
+	}
+
+	/**
+	 * Converts a legacy ISO 8601 date (with offset) into WordPress post dates.
+	 *
+	 * The legacy offset is respected, so `2021-09-03T08:15:00+10:00` is stored
+	 * as the same instant in both site time and UTC.
+	 *
+	 * @param string $iso Legacy date, e.g. "2021-09-03T08:15:00+10:00".
+	 * @return array{post_date: string, post_date_gmt: string}
+	 * @throws \Exception When the date can't be parsed. The record is then marked failed.
+	 */
+	public static function dates_for( string $iso ): array {
+		$date = new \DateTimeImmutable( $iso );
+
+		return array(
+			'post_date'     => $date->setTimezone( wp_timezone() )->format( 'Y-m-d H:i:s' ),
+			'post_date_gmt' => $date->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' ),
+		);
 	}
 
 	/**

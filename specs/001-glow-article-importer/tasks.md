@@ -253,7 +253,7 @@ description: "Task list for the Glow Daily Article Importer"
 
 ### Implementation for User Story 3
 
-- [ ] T020 [P] [US3] Add `dates_for( string $iso ): array` to `plugin/glow-migration/includes/class-importer.php`:
+- [X] T020 [P] [US3] Add `dates_for( string $iso ): array` to `plugin/glow-migration/includes/class-importer.php`:
   - `$dt = new \DateTimeImmutable( $iso )`.
   - Return:
     ```php
@@ -263,14 +263,20 @@ description: "Task list for the Glow Daily Article Importer"
     ]
     ```
   - An invalid date throws, so the record fails.
-- [ ] T021 [US3] In the post array in `plugin/glow-migration/includes/class-importer.php`:
+- [X] T021 [US3] In the post array in `plugin/glow-migration/includes/class-importer.php`:
   - Merge in `dates_for( createDate )` (FR-023).
   - Set `post_status` to `( true === ( $record['published'] ?? false ) ) ? 'publish' : 'draft'`. As data-model.md §1 says, "A missing value counts as `false`" (FR-025).
   - Add `'edit_date' => true` on updates (research R4), so draft dates aren't reset (FR-024).
-- [ ] T022 [US3] Add unit asserts for `dates_for` to `plugin/glow-migration/tests/run.php`:
+- [X] T022 [US3] Add unit asserts for `dates_for` to `plugin/glow-migration/tests/run.php`:
   - `2021-09-03T08:15:00+10:00` → GMT `2021-09-02 22:15:00`.
   - `2022-03-14T10:00:00+11:00` (10232, daylight saving) → GMT `2022-03-13 23:00:00`.
-- [ ] T023 [US3] Bump `CONVERTER_VERSION` to `'2'` in `plugin/glow-migration/glow-migration.php`, so posts imported before dates were fixed get updated on the next run. Rerun the import, then run quickstart.md §2's `wp post list` date and status check and the logged-out 404 check for 10234 (quickstart.md §5).
+- [X] T023 [US3] Bump `CONVERTER_VERSION` to `'2'` in `plugin/glow-migration/glow-migration.php`, so posts imported before dates were fixed get updated on the next run. Rerun the import, then run quickstart.md §2's `wp post list` date and status check and the logged-out 404 check for 10234 (quickstart.md §5).
+  - **Verified 2026-10-14**:
+    - Bumped `CONVERTER_VERSION` to `'2'`. Importing v2 gave 6 updated; rerunning gave 6 unchanged.
+    - Every `post_date_gmt` equals `createDate` in UTC, e.g. 10231 → `2021-09-02 22:15:00`. The site timezone is UTC, so `post_date` is the same.
+    - Statuses: 10234 is `draft` with its date kept; the other 5 are `publish`.
+    - Logged out, 10234 returns 404 by ID and by slug and doesn't appear on the home page or in the RSS feed. Published posts return 200, and the feed lists them by original date.
+    - The unit tests also check a Sydney site timezone, including a daylight-saving date.
 
 **Checkpoint**: Dates and statuses are correct, and they survive reruns.
 
